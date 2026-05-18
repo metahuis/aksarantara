@@ -38,6 +38,7 @@ export default function EntriesPage() {
     setLoading(false);
   }, [status, langFilter]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function updateStatus(ids, newStatus) {

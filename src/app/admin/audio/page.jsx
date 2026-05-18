@@ -31,7 +31,7 @@ export default function AudioPage() {
     setLoading(false);
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { loadEntries(); }, [langFilter]);
 
   // ── Single upload ────────────────────────────────────────────

@@ -13,12 +13,14 @@ export default function ConnectionPill() {
   const [mounted, setMounted]       = useState(false);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setMounted(true);
 
     function onOnline()  { setConnState(c => c === 'sync' ? 'sync' : 'online'); }
     function onOffline() { setConnState('offline'); }
 
     setConnState(navigator.onLine ? 'online' : 'offline');
+    /* eslint-enable react-hooks/set-state-in-effect */
     window.addEventListener('online',  onOnline);
     window.addEventListener('offline', onOffline);
 

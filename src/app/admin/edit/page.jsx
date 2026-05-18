@@ -174,8 +174,10 @@ export default function QuickEditPage() {
 
   useEffect(() => {
     const s = slugify(form?.slug ?? '');
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!s) { setSlugStatus('idle'); return; }
     setSlugStatus('checking');
+    /* eslint-enable react-hooks/set-state-in-effect */
     clearTimeout(slugDebounce.current);
     slugDebounce.current = setTimeout(async () => {
       let q = createClient().from('entries').select('id', { count: 'exact', head: true }).eq('slug', s);

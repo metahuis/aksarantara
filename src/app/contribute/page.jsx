@@ -74,7 +74,7 @@ export default function ContributePage() {
   const [aiError, setAiError] = useState('');
   const [listenPhase, setListenPhase] = useState('idle'); // 'idle'|'listening'|'done'
   const [draftedFields, setDraftedFields] = useState({ phonetic: false, meaning: false });
-  const draftIdRef = useRef(null);
+  const [draftId, setDraftId] = useState(null);
 
   const recorderRef = useRef(null);
   const timerRef = useRef(null);
@@ -171,7 +171,7 @@ export default function ContributePage() {
     setListenPhase('listening');
     setAiError('');
     setAiDraft(null);
-    draftIdRef.current = `draft-${Date.now()}`;
+    setDraftId(`draft-${Date.now()}`);
     try {
       const source = audioBlob || uploadFile;
       let payload = { lang: form.language };
@@ -384,7 +384,7 @@ export default function ContributePage() {
                 <button className="btn-ghost btn-sm" onClick={() => { setAiDraft(null); setAiError(''); setListenPhase('idle'); }}>Abaikan</button>
               </div>
             </div>
-            <DraftFeedbackRow draftId={draftIdRef.current} />
+            <DraftFeedbackRow draftId={draftId} />
           </motion.div>
         )}
       </AnimatePresence>

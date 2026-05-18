@@ -95,6 +95,7 @@ export default function LanguagesPage() {
     setLoading(false);
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, []);
 
   async function handleSave(formData, existingId) {

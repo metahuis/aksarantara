@@ -107,7 +107,7 @@ export default function ChatPage() {
             <div>
               <div className="tutor-sidebar-heading">Cara Pakai</div>
               <div className="tutor-sidebar-tip">Tanya kata — ketik kata untuk mencari artinya di arsip.</div>
-              <div className="tutor-sidebar-tip">Minta kuis — ketik "Kuis 10 kata [bahasa]" untuk latihan.</div>
+              <div className="tutor-sidebar-tip">Minta kuis — ketik &quot;Kuis 10 kata [bahasa]&quot; untuk latihan.</div>
               <div className="tutor-sidebar-tip">Ngobrol — tanya sejarah atau budaya bahasa yang dipilih.</div>
             </div>
             <div>
