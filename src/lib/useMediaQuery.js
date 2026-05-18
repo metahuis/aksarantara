@@ -7,8 +7,6 @@ export function useMediaQuery(query) {
 
   useEffect(() => {
     const mq = window.matchMedia(query);
-    setMatches(mq.matches);
-
     const handler = (e) => setMatches(e.matches);
     mq.addListener(handler);
     return () => mq.removeListener(handler);

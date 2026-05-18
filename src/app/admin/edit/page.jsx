@@ -134,6 +134,7 @@ export default function QuickEditPage() {
 
   useEffect(() => {
     clearTimeout(debounce.current);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!query.trim() && !langFilter) { setResults([]); return; }
     debounce.current = setTimeout(async () => {
       setSearching(true);
