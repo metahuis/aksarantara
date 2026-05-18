@@ -1,0 +1,2 @@
+ALTER TABLE languages ADD COLUMN IF NOT EXISTS target INTEGER DEFAULT 250;
+UPDATE languages SET target = 250 WHERE target IS NULL;

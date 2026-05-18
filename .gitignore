@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db
+
+# Custom exclusions
+.claude/
+CLAUDE.md
+Redesign.md
+TIFA.md
+GEMMA.md
+docs/
+
+# Next.js build output
+.next/
+out/
+build/

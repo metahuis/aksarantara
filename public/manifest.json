@@ -1,0 +1,21 @@
+{
+  "name": "Aksarantara — Arsip Bahasa Daerah Indonesia",
+  "short_name": "Aksarantara",
+  "description": "Arsip digital untuk bahasa daerah Indonesia yang terancam punah. Preservasi linguistik untuk komunitas penutur asli, peneliti, dan pendidik.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#58cc02",
+  "icons": [],
+  "categories": ["education", "reference"],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}
