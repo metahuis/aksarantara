@@ -35,7 +35,7 @@ function LoginInner() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
+    <main style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 24px calc(78px + env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ width: '100%', maxWidth: 400 }}>
 
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
