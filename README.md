@@ -166,6 +166,53 @@ Endangerment levels follow the official Badan Bahasa (Indonesian Language Agency
 
 ---
 
+## Lontara OCR — Fine-tuning pipeline
+
+The `/scan` feature currently uses Gemma 4 vision directly. To push Character Error Rate below 10% on degraded manuscripts, we are fine-tuning **PaliGemma2 3B** (Google's purpose-built OCR vision model) as a first-stage transcriber.
+
+**Two-stage pipeline (post fine-tune):**
+
+```
+Manuscript photo
+      ↓
+[PaliGemma2-LoRA]  ←  fine-tuned on Lontara synthetic + real crops
+      ↓
+romanized text  (e.g. "tau ri laleng bola")
+      ↓
+[Gemma 4 via Gemini API]  ←  existing /scan route
+      ↓
+IPA + Indonesian gloss + English gloss
+```
+
+**Training data:**
+
+| Dataset | Size | Source |
+|---|---|---|
+| `metahuis/lontara-ocr-synthetic` | 6,000 images | Generated from `Lontara.ttf` — all 138 syllables, 8 augmentation variants |
+| `metahuis/lontara-ocr-real` | growing | Cropped lines from KITLV / British Library manuscript scans, manually labeled |
+
+**Scripts** (see [`scripts/README.md`](scripts/README.md) for the full runbook):
+
+| Script | Purpose |
+|---|---|
+| `scripts/generate_lontara_dataset.py` | Generate 6,000 synthetic (image, romanization) pairs from `Lontara.ttf` |
+| `scripts/push_to_hub.py` | Push dataset to HuggingFace Hub |
+| `scripts/kaggle_lontara_training.py` | PaliGemma2 LoRA fine-tune — runs on Kaggle free T4 GPU (~3–4h) |
+| `scripts/label_real_crops.py` | Resumable CLI tool for labeling real manuscript line crops |
+
+**Expected CER targets:**
+
+| Stage | Character Error Rate |
+|---|---|
+| Gemma 4 vision, no fine-tune | ~40–60% on aged manuscripts |
+| Round 1 — synthetic only | ~15–25% |
+| Round 2 — + real manuscript crops | ~8–12% |
+| Round 2 — + 300+ real crops | < 5% |
+
+Training is ongoing. The HuggingFace model repo (`metahuis/lontara-paligemma2`) will be updated as each round completes.
+
+---
+
 ## Architecture notes
 
 - **Auth:** Supabase SSR via `@supabase/ssr`. Route protection handled in `src/proxy.js` (Next.js 16 convention — `middleware.js` is deprecated in v16). `/contribute` requires login; `/scan` and `/chat` are intentionally public for demo access.

@@ -8,6 +8,9 @@ lint_output.txt
 .DS_Store
 Thumbs.db
 
+# Generated training data
+data/
+
 # Custom exclusions
 .claude/
 CLAUDE.md
