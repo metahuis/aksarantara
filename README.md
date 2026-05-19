@@ -182,24 +182,24 @@ Aksarantara is an active project. **All AI features run on Gemma 4** (via the Ge
 
 - **`/scan` latency** — Gemma 4 is a thinking (chain-of-thought) model. Each OCR request takes 60–90 seconds. Vercel's free serverless tier caps functions at 60s, so production deployment of `/scan` requires Vercel Pro or self-hosting.
 - **`/scan` quality on aged manuscripts** — General-purpose vision struggles with handwritten and faded Lontara. Clean typeset (modern printed editions, font renderings) works well.
-- **Whisper is generic** — Stock `whisper-large-v3` handles Indonesian well but degrades on Bugis vocabulary and regional accents.
+- **Whisper is generic** — Stock `whisper-large-v3` handles Indonesian well but degrades on regional vocabulary and accents across our five pilot languages.
 - **Cold-start corpus** — The five pilot languages currently have limited approved entries and speaker recordings. Growing the corpus is the foundation of every later improvement.
 
 ### Roadmap
 
 **Phase 1 — Content + speakers (active now)**
 
-Grow the corpus through academic partnerships (Universitas Hasanuddin Bugis linguistics faculty) and community contributors. Target: ~100 approved entries and speaker recordings per language. This is the foundation — every later phase needs labeled data.
+Grow the corpus across all five pilot languages — Bugis, Massenrempulu, Konjo, Minangkabau, Melayu Jambi — through community contributors and prospective academic collaborators. Target: ~100 approved entries and speaker recordings per language. This is the foundation — every later phase needs labeled data.
 
-**Phase 2 — Whisper fine-tune for Bugis ASR**
+**Phase 2 — Whisper fine-tune for regional Indonesian ASR**
 
-When ~20 hours of paired audio + transcript exist (from `/contribute` submissions), fine-tune `whisper-large-v3` on Aksarantara's data. Expected outcome: noticeable WER improvement on Bugis vocabulary, less moderator correction. Audio is the project's core mission, so this matters more than the OCR fine-tune below.
+When ~20 hours of paired audio + transcript exist (from `/contribute` submissions), fine-tune `whisper-large-v3` on Aksarantara's data — spanning all five pilot languages. Expected outcome: noticeable WER improvement on regional vocabulary and accents, less moderator correction. Audio is the project's core mission, so this matters more than the OCR fine-tune below.
 
 Stack: HuggingFace native + LoRA. Stable libraries. Kaggle T4 or Modal Labs.
 
-**Phase 3 — Lontara OCR fine-tune**
+**Phase 3 — Script OCR fine-tune (Lontara first, Jawi next)**
 
-The `scripts/` directory contains a complete PaliGemma2 fine-tuning pipeline:
+The project covers two historical scripts: **Lontara** (Bugis, Massenrempulu, Konjo) and **Jawi** (Minangkabau, Melayu Jambi). The `scripts/` directory contains a complete PaliGemma2 fine-tuning pipeline, starting with Lontara since we have a font reference (`Lontara.ttf`):
 
 | Script | Purpose |
 |---|---|
@@ -208,17 +208,17 @@ The `scripts/` directory contains a complete PaliGemma2 fine-tuning pipeline:
 | `scripts/kaggle_lontara_training.py` | PaliGemma2 LoRA fine-tune notebook |
 | `scripts/label_real_crops.py` | Resumable CLI tool for labeling real manuscript line crops |
 
-The synthetic dataset (`metahuis/lontara-ocr-synthetic`, 6,000 images generated from `Lontara.ttf`) is already published. **Training is paused** — initial attempts on Kaggle hit a recurring "model memorizes pixel patterns, doesn't generalize to aged paper" problem driven by library version conflicts and synthetic-only data. Resuming requires labeled real manuscript crops (target: 300+ from KITLV / academic partners), which gates Phase 3 behind Phase 1.
+The synthetic Lontara dataset (`metahuis/lontara-ocr-synthetic`, 6,000 images generated from `Lontara.ttf`) is already published. **Training is paused** — initial attempts on Kaggle hit a recurring "model memorizes pixel patterns, doesn't generalize to aged paper" problem driven by library version conflicts and synthetic-only data. Resuming requires labeled real manuscript crops (target: 300+), sourced through future digitization partnerships. Jawi follows the same pipeline once a working Lontara model proves the approach.
 
-Two-stage pipeline once a working fine-tuned model exists:
+Two-stage inference pipeline once a working fine-tuned model exists:
 
 ```
-Manuscript photo → [PaliGemma2-LoRA] → romanized text → [Gemma 4 via Gemini API] → IPA + Indonesian gloss + English gloss
+Manuscript photo → [Script-specific OCR model] → romanized text → [Gemma 4 via Gemini API] → IPA + Indonesian gloss + English gloss
 ```
 
 **Phase 4 — Dialect classification**
 
-Sub-dialect tagging on audio recordings (Bugis-Wajo vs Bugis-Bone vs Bugis-Soppeng, etc.). Improves archive filtering and speaker attribution. Wav2Vec2 base + small classification head; runs after the corpus has enough speaker diversity.
+Sub-dialect tagging on audio recordings (e.g. Bugis-Wajo vs Bugis-Bone, Minangkabau Padang vs Minangkabau Pesisir, etc.). Improves archive filtering and speaker attribution across all five pilot languages. Wav2Vec2 base + small classification head; runs after the corpus has enough speaker diversity.
 
 ### Why Gemma 4 across the board
 
