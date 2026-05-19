@@ -166,50 +166,63 @@ Endangerment levels follow the official Badan Bahasa (Indonesian Language Agency
 
 ---
 
-## Lontara OCR — Fine-tuning pipeline
+## Roadmap
 
-The `/scan` feature currently uses Gemma 4 vision directly. To push Character Error Rate below 10% on degraded manuscripts, we are fine-tuning **PaliGemma2 3B** (Google's purpose-built OCR vision model) as a first-stage transcriber.
+Aksarantara is an active project. **All AI features run on Gemma 4** (via the Gemini API) today. This section documents what works now, the limitations we know about, and the planned improvements — including the training initiatives already partially built into this repository.
 
-**Two-stage pipeline (post fine-tune):**
+### Current state
 
-```
-Manuscript photo
-      ↓
-[PaliGemma2-LoRA]  ←  fine-tuned on Lontara synthetic + real crops
-      ↓
-romanized text  (e.g. "tau ri laleng bola")
-      ↓
-[Gemma 4 via Gemini API]  ←  existing /scan route
-      ↓
-IPA + Indonesian gloss + English gloss
-```
+| Feature | Model | Status | Note |
+|---|---|---|---|
+| `/contribute` AI draft | Groq Whisper + Gemma 4 26B text | ✓ Live | Audio → transcript → IPA + gloss |
+| `/chat` corpus tutor | Gemma 4 26B text | ✓ Live | Grounded in Supabase entries |
+| `/scan` manuscript OCR | Gemma 4 26B vision | ✓ Live | 60–90s per request — thinking model overhead |
 
-**Training data:**
+### Known limitations
 
-| Dataset | Size | Source |
-|---|---|---|
-| `metahuis/lontara-ocr-synthetic` | 6,000 images | Generated from `Lontara.ttf` — all 138 syllables, 8 augmentation variants |
-| `metahuis/lontara-ocr-real` | growing | Cropped lines from KITLV / British Library manuscript scans, manually labeled |
+- **`/scan` latency** — Gemma 4 is a thinking (chain-of-thought) model. Each OCR request takes 60–90 seconds. Vercel's free serverless tier caps functions at 60s, so production deployment of `/scan` requires Vercel Pro or self-hosting.
+- **`/scan` quality on aged manuscripts** — General-purpose vision struggles with handwritten and faded Lontara. Clean typeset (modern printed editions, font renderings) works well.
+- **Whisper is generic** — Stock `whisper-large-v3` handles Indonesian well but degrades on Bugis vocabulary and regional accents.
+- **Cold-start corpus** — The five pilot languages currently have limited approved entries and speaker recordings. Growing the corpus is the foundation of every later improvement.
 
-**Scripts** (see [`scripts/README.md`](scripts/README.md) for the full runbook):
+### Roadmap
+
+**Phase 1 — Content + speakers (active now)**
+
+Grow the corpus through academic partnerships (Universitas Hasanuddin Bugis linguistics faculty) and community contributors. Target: ~100 approved entries and speaker recordings per language. This is the foundation — every later phase needs labeled data.
+
+**Phase 2 — Whisper fine-tune for Bugis ASR**
+
+When ~20 hours of paired audio + transcript exist (from `/contribute` submissions), fine-tune `whisper-large-v3` on Aksarantara's data. Expected outcome: noticeable WER improvement on Bugis vocabulary, less moderator correction. Audio is the project's core mission, so this matters more than the OCR fine-tune below.
+
+Stack: HuggingFace native + LoRA. Stable libraries. Kaggle T4 or Modal Labs.
+
+**Phase 3 — Lontara OCR fine-tune**
+
+The `scripts/` directory contains a complete PaliGemma2 fine-tuning pipeline:
 
 | Script | Purpose |
 |---|---|
-| `scripts/generate_lontara_dataset.py` | Generate 6,000 synthetic (image, romanization) pairs from `Lontara.ttf` |
+| `scripts/generate_lontara_dataset.py` | Generate synthetic (image, romanization) pairs from `Lontara.ttf` |
 | `scripts/push_to_hub.py` | Push dataset to HuggingFace Hub |
-| `scripts/kaggle_lontara_training.py` | PaliGemma2 LoRA fine-tune — runs on Kaggle free T4 GPU (~3–4h) |
+| `scripts/kaggle_lontara_training.py` | PaliGemma2 LoRA fine-tune notebook |
 | `scripts/label_real_crops.py` | Resumable CLI tool for labeling real manuscript line crops |
 
-**Expected CER targets:**
+The synthetic dataset (`metahuis/lontara-ocr-synthetic`, 6,000 images generated from `Lontara.ttf`) is already published. **Training is paused** — initial attempts on Kaggle hit a recurring "model memorizes pixel patterns, doesn't generalize to aged paper" problem driven by library version conflicts and synthetic-only data. Resuming requires labeled real manuscript crops (target: 300+ from KITLV / academic partners), which gates Phase 3 behind Phase 1.
 
-| Stage | Character Error Rate |
-|---|---|
-| Gemma 4 vision, no fine-tune | ~40–60% on aged manuscripts |
-| Round 1 — synthetic only | ~15–25% |
-| Round 2 — + real manuscript crops | ~8–12% |
-| Round 2 — + 300+ real crops | < 5% |
+Two-stage pipeline once a working fine-tuned model exists:
 
-Training is ongoing. The HuggingFace model repo (`metahuis/lontara-paligemma2`) will be updated as each round completes.
+```
+Manuscript photo → [PaliGemma2-LoRA] → romanized text → [Gemma 4 via Gemini API] → IPA + Indonesian gloss + English gloss
+```
+
+**Phase 4 — Dialect classification**
+
+Sub-dialect tagging on audio recordings (Bugis-Wajo vs Bugis-Bone vs Bugis-Soppeng, etc.). Improves archive filtering and speaker attribution. Wav2Vec2 base + small classification head; runs after the corpus has enough speaker diversity.
+
+### Why Gemma 4 across the board
+
+Aksarantara was built for the **Gemma 4 Good Hackathon**. Every AI surface uses Gemma 4 via Gemini API (`gemma-4-26b-a4b-it`). The thinking variant earns its keep for `/contribute` IPA drafting and `/chat` linguistics tutoring — both tasks benefit from chain-of-thought reasoning. For `/scan` OCR, thinking adds latency without accuracy gain; Phase 3 plans to delegate raw character recognition to a fine-tuned dedicated model while keeping Gemma 4 as the linguistic reasoner in the second stage.
 
 ---
 

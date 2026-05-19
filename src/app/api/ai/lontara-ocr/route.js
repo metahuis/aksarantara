@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // Robustly extract the first complete JSON object from a string.
 // Handles: trailing text, markdown code fences, and greedy regex failures.
@@ -148,7 +148,7 @@ export async function POST(request) {
     let res;
     for (let attempt = 1; attempt <= 3; attempt++) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 55_000);
+      const timeoutId = setTimeout(() => controller.abort(), 110_000);
       try {
         res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${GEMMA_MODEL}:generateContent?key=${apiKey}`,
