@@ -23,7 +23,7 @@ const SCRIPT_LABELS = {
   unknown: 'Tidak Dikenali',
 };
 
-const SUBNAV_TABS = ['Transliterasi', 'Romanisasi', 'Terjemahan', 'Entri'];
+const SUBNAV_TABS = ['Romanisasi', 'Terjemahan', 'Kata Dikenali', 'Aksara Asli'];
 
 export default function ScanPage() {
   const [image, setImage]       = useState(null); // { url, base64, mimeType }
@@ -54,7 +54,7 @@ export default function ScanPage() {
     reader.onload = (e) => {
       const original = new window.Image();
       original.onload = () => {
-        const MAX = 800;
+        const MAX = 1600;
         let { width, height } = original;
         if (width > MAX || height > MAX) {
           const ratio = Math.min(MAX / width, MAX / height);
@@ -65,8 +65,8 @@ export default function ScanPage() {
         canvas.width = width;
         canvas.height = height;
         canvas.getContext('2d').drawImage(original, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        const img = { url: dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+        const dataUrl = canvas.toDataURL('image/png');
+        const img = { url: dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/png' };
         setImage(img);
         setResult(null);
         setError('');
@@ -327,25 +327,19 @@ export default function ScanPage() {
                     </div>
 
                     <AnimatePresence mode="wait">
-                      {activeTab === 0 && result.transcription && (
-                        <motion.div key="translit" className="lon-result-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                          <div className="lon-result-label">Transliterasi</div>
-                          <div className="lon-result-text">{result.transcription}</div>
-                        </motion.div>
-                      )}
-                      {activeTab === 1 && result.romanization && (
+                      {activeTab === 0 && (
                         <motion.div key="roman" className="lon-result-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                           <div className="lon-result-label">Romanisasi</div>
-                          <div className="lon-result-text">{result.romanization}</div>
+                          <div className="lon-result-text">{result.romanization || '—'}</div>
                         </motion.div>
                       )}
-                      {activeTab === 2 && (result.notes || result.translation) && (
+                      {activeTab === 1 && (
                         <motion.div key="trans" className="lon-result-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                           <div className="lon-result-label">Terjemahan</div>
-                          <div className="lon-result-text" style={{ fontSize: 15 }}>{result.notes || result.translation}</div>
+                          <div className="lon-result-text" style={{ fontSize: 15 }}>{result.notes || result.translation || '—'}</div>
                         </motion.div>
                       )}
-                      {activeTab === 3 && (
+                      {activeTab === 2 && (
                         <motion.div key="entries" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                           {hasSaveableEntries ? (
                             <>
@@ -374,20 +368,29 @@ export default function ScanPage() {
                           )}
                         </motion.div>
                       )}
+                      {activeTab === 3 && (
+                        <motion.div key="translit" className="lon-result-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                          <div className="lon-result-label">Aksara Asli (Unicode)</div>
+                          {result.transcription
+                            ? <div className="lon-result-text">{result.transcription}</div>
+                            : <div style={{ color: 'var(--n-500)', fontSize: 13, paddingTop: 8 }}>Aksara Unicode tidak dihasilkan oleh model. Lihat tab Romanisasi untuk bacaan Latin.</div>
+                          }
+                        </motion.div>
+                      )}
                     </AnimatePresence>
 
                     {/* Show all result sections on mobile (no subnav needed for small screen) */}
                     <div className="lon-result-mobile-stack">
-                      {result.transcription && (
-                        <div className="lon-result-section" style={{ marginTop: 8 }}>
-                          <div className="lon-result-label">Transliterasi</div>
-                          <div className="lon-result-text">{result.transcription}</div>
-                        </div>
-                      )}
                       {result.romanization && (
-                        <div className="lon-result-section">
+                        <div className="lon-result-section" style={{ marginTop: 8 }}>
                           <div className="lon-result-label">Romanisasi</div>
                           <div className="lon-result-text">{result.romanization}</div>
+                        </div>
+                      )}
+                      {result.transcription && (
+                        <div className="lon-result-section">
+                          <div className="lon-result-label">Aksara Asli</div>
+                          <div className="lon-result-text">{result.transcription}</div>
                         </div>
                       )}
                       {(result.notes || result.translation) && (

@@ -19,10 +19,7 @@ export default function MessageBubble({ msg }) {
         transition={{ duration: 0.18 }}
       >
         <span className="spin" style={{ display: 'inline-block', animation: 'spin 0.9s linear infinite' }}>◌</span>
-        📚 Membaca arsip…
-        {msg.content && (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, opacity: 0.7 }}> {msg.content}</span>
-        )}
+        {msg.content || '📚 Membaca arsip…'}
       </motion.div>
     );
   }

@@ -36,7 +36,7 @@ function checkRateLimit(userId) {
   if (now > record.reset) { record.count = 0; record.reset = now + 60_000; }
   record.count++;
   rateLimits.set(userId, record);
-  return record.count <= 5;
+  return record.count <= 10;
 }
 
 async function getAuthUser() {
@@ -78,25 +78,25 @@ Notes: Lontara is written left-to-right. f, q, v, x, z do not exist in Bugis.
 
 const OCR_PROMPT = (langHint, hasChartImage) =>
   (hasChartImage
-    ? `The FIRST image is a Lontara Bugis alphabet reference chart. The SECOND image is the manuscript to transcribe. Use the chart to identify every character. `
-    : `Use this Lontara Bugis character reference:\n\n${LONTARA_CHART}\n\n`) +
-  `You are an expert paleographer. Your task is to transcribe the manuscript image COMPLETELY and FAITHFULLY — every visible character, every line, from top to bottom, left to right.\n\n` +
-  `CRITICAL RULES:\n` +
-  `- DO NOT summarize, sample, or describe. Transcribe every glyph you can see.\n` +
-  `- DO NOT claim the text is "repetitive" or "a primer" unless you have transcribed the entire visible page and verified this.\n` +
-  `- If a character is unclear, transcribe your best guess and note it in "notes".\n` +
-  `- Preserve line breaks in the transcription as "\\n".\n` +
-  `- Aim for at least 20 unique words from a 2-page manuscript before stopping.\n\n` +
-  `Steps:\n` +
-  `1. Identify whether the script is Lontara, Jawi, mixed, or unknown\n` +
-  `2. Transcribe ALL visible text — output the actual Unicode Lontara/Jawi characters, line by line\n` +
-  `3. Provide romanized Latin transliteration matching the transcription line by line\n` +
-  `4. Extract every individual word as a dictionary entry for ` +
-  `${langHint ? `the ${langHint} language` : 'Bugis, Makassar, or another South Sulawesi language'}\n\n` +
+    ? `The FIRST image is a Lontara Bugis alphabet reference chart. The SECOND image is the manuscript to analyze. Use the chart to identify characters. `
+    : `Lontara Bugis character reference:\n\n${LONTARA_CHART}\n\n`) +
+  `You are an expert in Indonesian regional scripts. Analyze this manuscript image.\n\n` +
+  `The script is ${langHint ? `likely ${langHint} (` : ''}Lontara (Bugis/Makassar) or Jawi (Malay Arabic)${langHint ? ')' : ''}, written in an Indonesian regional language.\n\n` +
+  `OUTPUT PRIORITY (most important first):\n` +
+  `1. romanization — Latin transliteration of everything readable (REQUIRED — always provide your best reading)\n` +
+  `2. entries — individual words with Indonesian meanings (REQUIRED — extract at least 5 words)\n` +
+  `3. notes — overall meaning/translation in Indonesian (REQUIRED)\n` +
+  `4. transcription — original script Unicode characters (OPTIONAL — only include if you are confident; leave empty string if unsure)\n\n` +
+  `RULES:\n` +
+  `- romanization must always have content. Give your best Latin reading even if uncertain.\n` +
+  `- In entries, use romanized Latin text as primary_text — do NOT use Unicode script characters.\n` +
+  `- Extract every distinct word you can identify as a separate entry.\n` +
+  `- transcription may be an empty string if you cannot reliably output the script Unicode.\n` +
+  `- Preserve line breaks in romanization as "\\n".\n\n` +
   `Output ONLY valid JSON:\n` +
-  `{"script":"lontara"|"jawi"|"mixed"|"unknown","transcription":"<full Unicode Lontara/Jawi text with line breaks>","romanization":"<full Latin transliteration>",` +
-  `"entries":[{"primary_text":"<word>","gloss_id":"<Indonesian meaning>","phonetic":"<IPA>","lang":"bugis"|"massenrempulu"|"konjo"|"minangkabau"|"melayu_jambi"}],` +
-  `"confidence":<0-1>,"notes":"<caveats or unclear regions>"}`;
+  `{"script":"lontara"|"jawi"|"mixed"|"unknown","transcription":"<Unicode script characters, or empty string>","romanization":"<Latin transliteration — required>",` +
+  `"entries":[{"primary_text":"<romanized word in Latin>","gloss_id":"<Indonesian meaning>","phonetic":"<IPA if known, else empty>","lang":"bugis"|"massenrempulu"|"konjo"|"minangkabau"|"melayu_jambi"}],` +
+  `"confidence":<0-1>,"notes":"<overall Indonesian translation or context>"}`;
 
 // Read chart image from public/ if present (enables two-image mode)
 import { readFileSync, existsSync } from 'fs';

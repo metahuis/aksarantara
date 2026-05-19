@@ -167,6 +167,10 @@ export default function ContributePage() {
 
   async function generateAiDraft() {
     if (!form.word) return;
+    if (!authUser) {
+      setAiError('Sesi Anda telah berakhir. Silakan muat ulang halaman dan login kembali.');
+      return;
+    }
     setAiLoading(true);
     setListenPhase('listening');
     setAiError('');

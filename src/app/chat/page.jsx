@@ -7,6 +7,13 @@ import MessageBubble from '../../components/tutor/MessageBubble.jsx';
 import { PROMPTS_BY_LANG } from '../../components/tutor/SuggestedPrompts.jsx';
 import { LANGUAGES } from '../../data.js';
 
+function chipLabel(text) {
+  const t = text.toLowerCase();
+  if (/\b(kuis|quiz)\b/.test(t)) return '🃏 Menyiapkan kuis…';
+  if (text.trim().split(/\s+/).length <= 3) return '📚 Mencari di arsip…';
+  return '✦ Bertanya Gemma…';
+}
+
 export default function ChatPage() {
   const [messages, setMessages]   = useState([]);
   const [input, setInput]         = useState('');
@@ -43,14 +50,16 @@ export default function ChatPage() {
 
     // Show tool-call chip
     const toolChipId = Date.now();
-    setMessages(prev => [...prev, { role: 'gemma', type: 'tool', id: toolChipId, content: '' }]);
+    setMessages(prev => [...prev, { role: 'gemma', type: 'tool', id: toolChipId, content: chipLabel(text) }]);
 
     try {
       const res = await fetch('/api/ai/tutor-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content || '' })),
+          messages: [...messages, userMsg]
+            .filter(m => m.content)
+            .map(m => ({ role: m.role, content: m.content })),
           lang,
         }),
       });
@@ -134,6 +143,11 @@ export default function ChatPage() {
                   <p style={{ fontSize: 13, color: 'var(--n-500)', maxWidth: 320, lineHeight: 1.6 }}>
                     Tanya kata, minta kuis, atau cari pantun — setiap jawaban bersandar pada entri nyata di arsip.
                   </p>
+                  <div className="tutor-prompt-chips tutor-empty-chips">
+                    {PROMPTS_BY_LANG[lang].map(p => (
+                      <button key={p} className="tutor-prompt-chip" onClick={() => send(p)}>{p}</button>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <AnimatePresence initial={false}>

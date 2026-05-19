@@ -21,6 +21,15 @@ export default function QuizCardStack({ entries }) {
     }
   }
 
+  function skipCard() {
+    setFlipped(false);
+    if (idx + 1 >= entries.length) {
+      setDone(true);
+    } else {
+      setTimeout(() => setIdx(i => i + 1), 220);
+    }
+  }
+
   if (done) {
     return (
       <div className="tutor-quiz-card">
@@ -73,7 +82,7 @@ export default function QuizCardStack({ entries }) {
       {flipped && (
         <div className="tutor-quiz-actions" style={{ marginTop: 10 }}>
           <button className="tutor-quiz-btn wrong"   onClick={() => advance(false)}>✗ Salah</button>
-          <button className="tutor-quiz-btn"         onClick={() => setIdx(i => Math.min(i + 1, entries.length - 1))}>→ Skip</button>
+          <button className="tutor-quiz-btn"         onClick={skipCard}>→ Skip</button>
           <button className="tutor-quiz-btn correct" onClick={() => advance(true)}>✓ Benar</button>
         </div>
       )}
