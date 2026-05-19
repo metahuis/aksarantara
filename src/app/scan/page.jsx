@@ -52,21 +52,34 @@ export default function ScanPage() {
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataUrl = e.target.result;
-      const img = { url: dataUrl, base64: dataUrl.split(',')[1], mimeType: file.type };
-      setImage(img);
-      setResult(null);
-      setError('');
-      setSaved({});
-      setActiveTab(0);
-
-      // persist thumb
-      try {
-        const stored = JSON.parse(localStorage.getItem('lontara_recent') || '[]');
-        const next = [{ url: dataUrl, base64: img.base64, mimeType: img.mimeType }, ...stored].slice(0, 3);
-        localStorage.setItem('lontara_recent', JSON.stringify(next));
-        setThumbs(next);
-      } catch {}
+      const original = new window.Image();
+      original.onload = () => {
+        const MAX = 800;
+        let { width, height } = original;
+        if (width > MAX || height > MAX) {
+          const ratio = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(original, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const img = { url: dataUrl, base64: dataUrl.split(',')[1], mimeType: 'image/jpeg' };
+        setImage(img);
+        setResult(null);
+        setError('');
+        setSaved({});
+        setActiveTab(0);
+        try {
+          const stored = JSON.parse(localStorage.getItem('lontara_recent') || '[]');
+          const next = [img, ...stored].slice(0, 3);
+          localStorage.setItem('lontara_recent', JSON.stringify(next));
+          setThumbs(next);
+        } catch {}
+      };
+      original.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }

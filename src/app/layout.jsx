@@ -3,7 +3,6 @@ import MobileNav from '../components/MobileNav.jsx';
 import ScrollToTop from '../components/ScrollToTop.jsx';
 import NavigationProgress from '../components/NavigationProgress.jsx';
 import SWRegister from '../components/SWRegister.jsx';
-import InstallPrompt from '../components/InstallPrompt.jsx';
 import OnboardingWrapper from '../components/OnboardingWrapper.jsx';
 import { Toaster } from '../components/ui/Toast.jsx';
 
@@ -89,8 +88,7 @@ export default function RootLayout({ children }) {
         <NavigationProgress />
         <ScrollToTop />
         <SWRegister />
-        <InstallPrompt />
-        {children}
+{children}
         <MobileNav />
         <OnboardingWrapper />
         <Toaster />

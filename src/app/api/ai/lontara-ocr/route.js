@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+export const maxDuration = 60;
+
 // Robustly extract the first complete JSON object from a string.
 // Handles: trailing text, markdown code fences, and greedy regex failures.
 function extractJson(text) {
@@ -138,25 +140,27 @@ export async function POST(request) {
       { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageBase64 } },
     ];
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55_000);
+    const payload = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+    });
+
     let res;
-    try {
-      res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMMA_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
-          }),
-        }
-      );
-    } finally {
-      clearTimeout(timeoutId);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 55_000);
+      try {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMMA_MODEL}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', signal: controller.signal, body: payload }
+        );
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      if (res.ok || res.status !== 500) break;
+      const errPreview = await res.clone().text();
+      console.warn(`[lontara-ocr] attempt ${attempt} → 500:`, errPreview.slice(0, 120));
+      if (attempt < 3) await new Promise(r => setTimeout(r, 1500 * attempt));
     }
 
     if (!res.ok) {
