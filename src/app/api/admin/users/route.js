@@ -9,6 +9,41 @@ function adminClient() {
   );
 }
 
+// GET — list all auth users merged with profile + role data
+export async function GET() {
+  const supabase = adminClient();
+
+  // Source of truth: auth.users (always has every registered user)
+  const { data: authData, error: authErr } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+  if (authErr) return NextResponse.json({ error: authErr.message }, { status: 500 });
+
+  const authUsers = authData?.users ?? [];
+  const ids = authUsers.map(u => u.id);
+
+  // Enrich with profile rows and roles (may be empty for new users)
+  const [{ data: profiles }, { data: roles }] = await Promise.all([
+    supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', ids),
+    supabase.from('user_roles').select('user_id, role').in('user_id', ids),
+  ]);
+
+  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]));
+  const roleMap    = Object.fromEntries((roles    ?? []).map(r => [r.user_id, r.role]));
+
+  const users = authUsers
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map(u => ({
+      id:           u.id,
+      email:        u.email,
+      username:     profileMap[u.id]?.username     ?? null,
+      display_name: profileMap[u.id]?.display_name ?? null,
+      avatar_url:   profileMap[u.id]?.avatar_url   ?? null,
+      created_at:   u.created_at,
+      user_roles:   roleMap[u.id] ? [{ role: roleMap[u.id] }] : [],
+    }));
+
+  return NextResponse.json({ users });
+}
+
 // POST — invite / create new user with role
 export async function POST(request) {
   const { email, role } = await request.json();

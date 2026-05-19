@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { createClient } from '@/lib/supabase';
 import { LANGUAGES } from '@/data';
 
@@ -165,8 +165,8 @@ export default function AudioPage() {
                     const lang = LANGUAGES.find(l => l.id === e.lang);
                     const isExpanded = expandedId === e.id;
                     return (
-                      <>
-                        <tr key={e.id} style={{ borderBottom: isExpanded ? 'none' : (i < entries.length - 1 ? '1px solid var(--n-100)' : 'none') }}>
+                      <Fragment key={e.id}>
+                        <tr style={{ borderBottom: isExpanded ? 'none' : (i < entries.length - 1 ? '1px solid var(--n-100)' : 'none') }}>
                           <td style={{ padding: '11px 16px', fontWeight: 600, fontSize: 14 }}>{e.primary_text}</td>
                           <td style={{ padding: '11px 16px', whiteSpace: 'nowrap' }}>
                             <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 8px', borderRadius: 6, background: lang?.color + '20', color: lang?.color }}>{lang?.name ?? e.lang}</span>
@@ -198,7 +198,7 @@ export default function AudioPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>

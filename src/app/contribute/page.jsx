@@ -75,6 +75,7 @@ export default function ContributePage() {
   const [listenPhase, setListenPhase] = useState('idle'); // 'idle'|'listening'|'done'
   const [draftedFields, setDraftedFields] = useState({ phonetic: false, meaning: false });
   const [draftId, setDraftId] = useState(null);
+  const [consent, setConsent] = useState(true);
 
   const recorderRef = useRef(null);
   const timerRef = useRef(null);
@@ -128,14 +129,31 @@ export default function ContributePage() {
   const locationLabel = [form.village, districtName, cityName, provinceName].filter(Boolean).join(', ');
 
   // ── Recording ────────────────────────────────────────────────
+  /** Pick a MIME type that Supabase Storage accepts (no codec params). */
+  function getSupportedMimeType() {
+    // Preferred: formats without codec suffix so Supabase accepts them.
+    const candidates = [
+      'audio/mp4',          // iOS Safari, some Android
+      'audio/ogg',          // Firefox desktop/Android
+      'audio/webm',         // Chrome desktop (clean, no codec param)
+    ];
+    return candidates.find(t => MediaRecorder.isTypeSupported(t)) || '';
+  }
+
   async function startRec() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const mimeType = getSupportedMimeType();
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       const chunks = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+        // Use the clean base MIME (strip codec params like ";codecs=opus")
+        const rawMime = recorder.mimeType || mimeType || 'audio/webm';
+        const cleanMime = rawMime.split(';')[0].trim();
+        const blob = new Blob(chunks, { type: cleanMime });
         setAudioBlob(blob);
         setRecorded(true);
         stream.getTracks().forEach(t => t.stop());
@@ -151,9 +169,10 @@ export default function ContributePage() {
   }
 
   function stopRec() {
-    recorderRef.current?.stop();
-    clearInterval(timerRef.current);
-    setRecording(false);
+    try { recorderRef.current?.stop(); } finally {
+      clearInterval(timerRef.current);
+      setRecording(false);
+    }
   }
 
   function resetAudio() {
@@ -161,8 +180,12 @@ export default function ContributePage() {
     setAudioBlob(null);
     setUploadFile(null);
     setRecDuration(0);
+    // Reset AI draft state so the "Analisis Rekaman" button reappears for the new recording.
+    // Intentionally do NOT clear form.phonetic or draftedFields — the IPA the user
+    // typed/applied in step 1 must survive a re-record action.
     setAiDraft(null);
     setAiError('');
+    setListenPhase('idle');
   }
 
   async function generateAiDraft() {
@@ -236,10 +259,19 @@ export default function ContributePage() {
 
       const audioSource = audioBlob || uploadFile;
       if (audioSource) {
-        const ext = uploadFile ? (uploadFile.name.split('.').pop() || 'wav') : 'webm';
+        // Derive extension from the clean MIME type (strip codec params)
+        const cleanType = (audioSource.type || '').split(';')[0].trim();
+        const mimeExtMap = { 'audio/mp4': 'm4a', 'audio/ogg': 'ogg', 'audio/webm': 'webm', 'audio/wav': 'wav', 'audio/mpeg': 'mp3' };
+        const ext = uploadFile
+          ? (uploadFile.name.split('.').pop() || 'wav')
+          : (mimeExtMap[cleanType] || 'webm');
         uploadedPath = `${form.language}/user/${Date.now().toString(36)}.${ext}`;
         const fd = new FormData();
-        fd.append('file', audioSource, `audio.${ext}`);
+        // Pass the blob with a clean MIME so the API receives the correct content-type
+        const cleanBlob = cleanType && cleanType !== audioSource.type
+          ? new Blob([await audioSource.arrayBuffer()], { type: cleanType })
+          : audioSource;
+        fd.append('file', cleanBlob, `audio.${ext}`);
         fd.append('path', uploadedPath);
         const uploadRes  = await fetch('/api/contribute/upload-audio', { method: 'POST', body: fd });
         const uploadData = await uploadRes.json();
@@ -307,6 +339,7 @@ export default function ContributePage() {
     setRecDuration(0);
     setSubmitError('');
     setSpeakerType('other');
+    setConsent(true);
     setDraftedFields({ phonetic: false, meaning: false });
     setListenPhase('idle');
     setAiDraft(null);
@@ -683,12 +716,17 @@ export default function ContributePage() {
                       <input className="cf-input" placeholder="Desa / Kelurahan" value={form.village} onChange={e => update('village', e.target.value)} />
                     </div>
                     <div className="cf-consent">
-                      <input type="checkbox" id="consent" defaultChecked />
+                      <input
+                        type="checkbox"
+                        id="consent"
+                        checked={consent}
+                        onChange={e => setConsent(e.target.checked)}
+                      />
                       <label htmlFor="consent">Saya telah memperoleh izin lisan dari penutur untuk mendokumentasikan dan membagikan rekaman ini di bawah CC-BY-SA.</label>
                     </div>
                     <div className="cf-actions">
                       <button className="btn-ghost" onClick={() => setStep(1)}>Kembali</button>
-                      <button className="btn-primary" disabled={!form.speaker || !form.province} onClick={() => setStep(3)}>
+                      <button className="btn-primary" disabled={!form.speaker || !form.province || !consent} onClick={() => setStep(3)}>
                         Tinjau <Icon name="arrow" size={14} />
                       </button>
                     </div>

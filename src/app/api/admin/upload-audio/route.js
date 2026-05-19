@@ -21,9 +21,12 @@ export async function POST(request) {
   const supabase    = adminClient();
   const arrayBuffer = await file.arrayBuffer();
 
+  const rawType   = file.type || 'audio/webm';
+  const cleanType = rawType.split(';')[0].trim();
+
   const { error: upErr } = await supabase.storage
     .from('recordings')
-    .upload(path, arrayBuffer, { upsert: true, contentType: file.type });
+    .upload(path, arrayBuffer, { upsert: true, contentType: cleanType });
 
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
 

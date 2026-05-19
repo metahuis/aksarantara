@@ -20,9 +20,13 @@ export async function POST(request) {
   const supabase    = adminClient();
   const arrayBuffer = await file.arrayBuffer();
 
+  // Strip codec params (e.g. "audio/webm;codecs=opus") — Supabase only accepts the base MIME.
+  const rawType    = file.type || 'audio/webm';
+  const cleanType  = rawType.split(';')[0].trim();
+
   const { error } = await supabase.storage
     .from('recordings')
-    .upload(path, arrayBuffer, { upsert: false, contentType: file.type || 'audio/webm' });
+    .upload(path, arrayBuffer, { upsert: false, contentType: cleanType });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

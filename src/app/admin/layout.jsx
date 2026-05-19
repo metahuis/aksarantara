@@ -12,8 +12,8 @@ const NAV_GROUPS = [
       { href: '/admin',           label: 'Dasbor' },
       { href: '/admin/entries',   label: 'Antrian Entri' },
       { href: '/admin/audio',     label: 'Kelola Audio' },
-      { href: '/admin/quick',      label: 'Tambah Cepat' },
-      { href: '/admin/edit',       label: 'Edit Cepat' },
+      { href: '/admin/quick',     label: 'Tambah Cepat' },
+      { href: '/admin/edit',      label: 'Edit Cepat' },
       { href: '/admin/bulk',      label: 'Unggah Massal' },
     ],
   },
@@ -29,14 +29,36 @@ const NAV_GROUPS = [
 ];
 
 export default function AdminLayout({ children }) {
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState(null);
+
+  // Default all groups collapsed; auto-expand the group containing the active route.
+  const [expanded, setExpanded] = useState(() => {
+    const init = {};
+    NAV_GROUPS.forEach(g => {
+      init[g.label] = g.items.some(i => i.href === pathname);
+    });
+    return init;
+  });
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
+
+  // Keep active group expanded when navigating.
+  useEffect(() => {
+    NAV_GROUPS.forEach(g => {
+      if (g.items.some(i => i.href === pathname)) {
+        setExpanded(e => ({ ...e, [g.label]: true }));
+      }
+    });
+  }, [pathname]);
+
+  function toggleGroup(label) {
+    setExpanded(e => ({ ...e, [label]: !e[label] }));
+  }
 
   async function handleLogout() {
     const supabase = createClient();
@@ -53,45 +75,68 @@ export default function AdminLayout({ children }) {
         background: 'var(--white)',
         borderRight: '1.5px solid var(--n-100)',
         display: 'flex', flexDirection: 'column',
-        padding: '24px 0',
         height: '100vh',
-        overflowY: 'auto',
+        overflow: 'hidden',
       }}>
-        <div style={{ padding: '0 20px 24px', borderBottom: '1px solid var(--n-100)' }}>
+        {/* Top — sticky brand */}
+        <div style={{ flexShrink: 0, padding: '20px 20px 16px', borderBottom: '1px solid var(--n-100)' }}>
           <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--green-d)' }}>
             Aksarantara
           </div>
           <div style={{ fontSize: 11, color: 'var(--n-500)', marginTop: 2 }}>Admin Panel</div>
         </div>
 
-        <nav style={{ flex: 1, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {NAV_GROUPS.map(({ label, items }) => (
-            <div key={label}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--n-300)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 12px', marginBottom: 4 }}>
-                {label}
+        {/* Middle — scrollable nav */}
+        <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {NAV_GROUPS.map(({ label, items }) => {
+            const isOpen = !!expanded[label];
+            return (
+              <div key={label}>
+                <button
+                  onClick={() => toggleGroup(label)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '7px 12px', borderRadius: 8,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 10, fontWeight: 800, color: 'var(--n-400)',
+                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                    transition: 'color 120ms',
+                  }}
+                >
+                  {label}
+                  <span style={{
+                    fontSize: 10, color: 'var(--n-300)',
+                    transform: isOpen ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 180ms',
+                    display: 'inline-block',
+                  }}>▾</span>
+                </button>
+                {isOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
+                    {items.map(({ href, label: itemLabel }) => {
+                      const active = pathname === href;
+                      return (
+                        <Link key={href} href={href} style={{
+                          display: 'block', padding: '9px 12px',
+                          borderRadius: 10,
+                          fontSize: 14, fontWeight: active ? 700 : 500,
+                          color: active ? 'var(--ink)' : 'var(--n-500)',
+                          background: active ? 'var(--n-50)' : 'transparent',
+                          transition: 'background 120ms, color 120ms',
+                        }}>
+                          {itemLabel}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {items.map(({ href, label: itemLabel }) => {
-                  const active = pathname === href;
-                  return (
-                    <Link key={href} href={href} style={{
-                      display: 'block', padding: '9px 12px',
-                      borderRadius: 10,
-                      fontSize: 14, fontWeight: active ? 700 : 500,
-                      color: active ? 'var(--ink)' : 'var(--n-500)',
-                      background: active ? 'var(--n-50)' : 'transparent',
-                      transition: 'background 120ms, color 120ms',
-                    }}>
-                      {itemLabel}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
-        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--n-100)' }}>
+        {/* Bottom — sticky user + logout */}
+        <div style={{ flexShrink: 0, padding: '14px 20px', borderTop: '1px solid var(--n-100)' }}>
           {user && (
             <div style={{ fontSize: 12, color: 'var(--n-500)', marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {user.email}

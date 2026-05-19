@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { createClient } from '@/lib/supabase';
 import { LANGUAGES } from '@/data';
 
@@ -75,8 +75,8 @@ export default function SpeakersPage() {
                 const linkedProfile = profiles.find(p => p.id === spk.profile_id);
                 const isEdit = editId === spk.id;
                 return (
-                  <>
-                    <tr key={spk.id} style={{ borderBottom: isEdit ? 'none' : (i < speakers.length - 1 ? '1px solid var(--n-100)' : 'none') }}>
+                  <Fragment key={spk.id}>
+                    <tr style={{ borderBottom: isEdit ? 'none' : (i < speakers.length - 1 ? '1px solid var(--n-100)' : 'none') }}>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>{spk.name}</div>
                         {spk.dialect && <div style={{ fontSize: 11, color: 'var(--n-400)', marginTop: 2 }}>Dialek: {spk.dialect}</div>}
@@ -129,7 +129,7 @@ export default function SpeakersPage() {
                         onCancel={() => setEditId(null)}
                       />
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
               {speakers.length === 0 && (

@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase';
 import { toast } from '@/components/ui/Toast';
 import { Dialog, DialogContent, DialogFooter, DialogClose } from '@/components/ui/Dialog';
 
@@ -18,12 +17,9 @@ export default function UsersPage() {
 
   async function load() {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, avatar_url, created_at, user_roles(role)')
-      .order('created_at', { ascending: false });
-    setUsers(data ?? []);
+    const res = await fetch('/api/admin/users');
+    const data = await res.json().catch(() => ({}));
+    setUsers(data.users ?? []);
     setLoading(false);
   }
 
@@ -79,8 +75,9 @@ export default function UsersPage() {
 
   const filtered = users.filter(u =>
     !search ||
-    (u.username  ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (u.display_name ?? '').toLowerCase().includes(search.toLowerCase())
+    (u.username     ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.display_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (u.email        ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -158,15 +155,19 @@ export default function UsersPage() {
             <tbody>
               {filtered.map((u) => {
                 const role = u.user_roles?.[0]?.role ?? null;
-                const initial = (u.display_name || u.username || '?').charAt(0).toUpperCase();
+                const displayName = u.display_name || u.username || u.email || '—';
+                const initial = displayName.charAt(0).toUpperCase();
                 return (
                   <tr key={u.id} className="admin-tr" data-acting={acting === u.id ? 'true' : undefined}>
                     <td className="admin-td">
                       <div className="admin-user-cell">
                         <div className="admin-user-avatar">{initial}</div>
                         <div>
-                          <div className="admin-user-name">{u.display_name || u.username || '—'}</div>
-                          {u.username && <div className="admin-user-handle">@{u.username}</div>}
+                          <div className="admin-user-name">{displayName}</div>
+                          {u.username
+                            ? <div className="admin-user-handle">@{u.username}</div>
+                            : u.email && <div className="admin-user-handle">{u.email}</div>
+                          }
                         </div>
                       </div>
                     </td>
